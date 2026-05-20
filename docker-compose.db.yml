@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: uav2lod1_postgres
+    environment:
+      POSTGRES_USER: uav2lod1
+      POSTGRES_PASSWORD: tini1572
+      POSTGRES_DB: uav2lod1_db
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U uav2lod1_user -d uav2lod1_db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - uav2lod1-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  uav2lod1-network:
+    driver: bridge

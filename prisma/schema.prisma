@@ -1,0 +1,209 @@
+// prisma/schema.prisma
+
+generator client {
+  provider   = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ===== USER & AUTH =====
+
+model User {
+  id                    String        @id @default(cuid())
+  email                 String        @unique @db.VarChar(255)
+  username              String        @unique @db.VarChar(128)
+  passwordHash          String        @db.Text
+  avatarUrl             String?       @db.VarChar(512)
+  firstName             String?       @db.VarChar(128)
+  lastName              String?       @db.VarChar(128)
+  department            String?       @db.VarChar(128)
+  isActive              Boolean       @default(true)
+  isEmailVerified       Boolean       @default(false)
+  verificationCode      String?       @db.VarChar(7)
+  verificationCodeExpiresAt DateTime?
+  resetTokenHash        String?       @db.Text
+  resetTokenExpiresAt   DateTime?
+  createdAt             DateTime      @default(now())
+  lastLoginAt           DateTime?
+
+  sessions              Session[]
+  projects              Project[]
+}
+
+model Session {
+  id                    String        @id @default(cuid())
+  token                 String        @unique @db.VarChar(256)
+  userId                String
+  user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt             DateTime
+  createdAt             DateTime      @default(now())
+
+  @@index([userId])
+  @@index([token])
+}
+
+// ===== PROJECT PIPELINE STATE =====
+
+model PipelineState {
+  projectId              String        @unique
+  project                Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  currentStageId         String        @db.VarChar(64)
+  overallProgress        Int           @default(0) // 0-100
+  isProcessing           Boolean       @default(false)
+  lastActivityAt         DateTime      @updatedAt
+
+  // Viewport state
+  viewportMode           String        @default("split") @db.VarChar(16) // split, 2d, 3d
+  activeViewportOpen     Boolean       @default(false)
+
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+
+  stageProgresses        StageProgress[]
+}
+
+model StageProgress {
+  id                     String        @id @default(cuid())
+  projectId              String
+  pipelineState          PipelineState @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+
+  stageId                String        @db.VarChar(64)
+  status                 String        @db.VarChar(32) // pending, ready, processing, completed, error, locked
+  progress               Int           @default(0) // 0-100 for processing stages
+  progressMessage        String?       @db.VarChar(512)
+
+  startedAt              DateTime?
+  completedAt            DateTime?
+  processingTimeSeconds  Int?
+  errorMessage           String?       @db.Text
+
+  // Stage-specific metadata (stored as JSON)
+  metadata               Json?         // stage-specific config and outputs
+  outputs                Json?         // any output data from the stage
+
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+
+  @@unique([projectId, stageId])
+  @@index([projectId, stageId])
+}
+
+// ===== PROJECTS =====
+
+model Project {
+  id                    String        @id @default(cuid())
+  userId                String
+  user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name                  String        @db.VarChar(255)
+  directoryPath         String        @db.Text
+  crs                   String        @default("EPSG:4326") @db.VarChar(32)
+  lastCompletedPhase    String?       @db.VarChar(64)
+  flightParams          Json?
+  processingOptions     Json?
+  settings              Json?
+  imageCount            Int?
+  areaHectares          Float?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  gcpData               GCPData?
+  stageResults          StageResult[]
+  sfmConfig             SfMConfig?
+  pipelineState         PipelineState?
+
+  @@index([userId])
+  @@unique([userId, name])
+}
+
+// ===== GCP (GROUND CONTROL POINTS) =====
+
+model GCPMarker {
+  id                    String        @id @default(cuid())
+  projectId             String
+  gcpData               GCPData       @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  
+  name                  String        @db.VarChar(255)
+  lng                   Float
+  lat                   Float
+  elevation             Float
+  accuracyH             Float?
+  accuracyV             Float?
+  description           String?       @db.Text
+
+  @@index([projectId])
+}
+
+model GCPData {
+  projectId             String        @unique
+  project               Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  sourceFile            String        @default("") @db.VarChar(255)
+  crs                   String        @default("EPSG:4326") @db.VarChar(32)
+  importedAt            DateTime      @default(now())
+  totalImported         Int           @default(0)
+  totalRows             Int           @default(0)
+  skippedRows           Int           @default(0)
+
+  gcps                  GCPMarker[]
+}
+
+// ===== STAGE RESULTS =====
+
+model StageResult {
+  id                    String        @id @default(cuid())
+  projectId             String
+  project               Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  stageId               String        @db.VarChar(64)
+  status                String        @default("pending") @db.VarChar(32)
+  startedAt             DateTime?
+  completedAt           DateTime?
+  error                 String?       @db.Text
+  
+  sfmOutputs            SfMOutputs?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  @@unique([projectId, stageId])
+  @@index([projectId, stageId])
+}
+
+model SfMOutputs {
+  id                    String        @id @default(cuid())
+  stageResultId         String        @unique
+  stageResult           StageResult   @relation(fields: [stageResultId], references: [id], onDelete: Cascade)
+  
+  orthoPath             String?       @db.VarChar(512)
+  dsmPath               String?       @db.VarChar(512)
+  dtmPath               String?       @db.VarChar(512)
+  pointCloudPath        String?       @db.VarChar(512)
+  gcpReportPath         String?       @db.VarChar(512)
+  gsdAchieved           Float?
+  gcpRmsError           Float?
+  processingTimeSeconds Int?
+  taskId                String?       @db.VarChar(128)
+}
+
+// ===== SFM CONFIGURATION =====
+
+model SfMConfig {
+  projectId             String        @unique
+  project               Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  odmNodeUrl            String        @default("http://localhost") @db.VarChar(512)
+  odmNodePort           Int           @default(3000)
+  featureQuality        String        @default("high") @db.VarChar(16)
+  pointCloudQuality     String        @default("high") @db.VarChar(16)
+  meshSize              Int           @default(200000)
+  desiredGSD            Float         @default(2.0)
+  useGCPs               Boolean       @default(true)
+  minNumFeatures        Int           @default(8000)
+  pcFilteringDistance   Float         @default(2.5)
+  fastOrthophoto        Boolean       @default(false)
+  useHybridMesh         Boolean       @default(false)
+
+  updatedAt             DateTime      @updatedAt
+}
