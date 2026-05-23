@@ -32,14 +32,14 @@ export function AuthPage() {
         </Suspense>
 
         {/* Tagline overlay */}
-        <div className="absolute bottom-8 left-8 right-8 z-10">
+        <div className="absolute bottom-6 left-6 right-6 z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="glass rounded-xl p-6 max-w-md"
+            className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-md p-5 max-w-md"
           >
-            <h2 className="font-display text-xl font-bold mb-2 text-balance">
+            <h2 className="text-lg font-semibold mb-2 text-balance">
               Transform UAV Imagery into Intelligence
             </h2>
             <p className="text-sm text-muted-foreground leading-relaxed">
@@ -54,7 +54,7 @@ export function AuthPage() {
                 (feature) => (
                   <span
                     key={feature}
-                    className="px-2 py-1 text-xs rounded-full bg-primary/10 text-primary border border-primary/20"
+                    className="px-2.5 py-1 text-xs rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
                   >
                     {feature}
                   </span>

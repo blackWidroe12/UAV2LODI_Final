@@ -1,7 +1,90 @@
-// Visual polish and scrollbar enhancements:
-// - Scrollbar color improved from dark oklch to light gray (#6B7280)
-// - Scrollbar width: 8px → 10px (+25%)
-// - Scrollbar height: 8px → 10px (+25%)
-// - Added gradient hover effect (gray to violet)
-// - Contrast ratio improved 424% (1.2:1 → 5.1:1) - WCAG AAA compliant
-// - Enhanced input focus states with smooth transitions
+@import '../styles/globals.css';
+
+/* Custom glass effect utilities */
+.glass {
+  @apply bg-card/80 backdrop-blur-md border border-border/50;
+}
+
+.glass-subtle {
+  @apply bg-card/50 backdrop-blur-sm;
+}
+
+.glass-strong {
+  @apply bg-card/90 backdrop-blur-lg border border-border/30;
+}
+
+/* Glow effects */
+.glow-cyan {
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.15);
+}
+
+.glow-cyan:hover {
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.25);
+}
+
+/* Custom pulse gradient border for new project card */
+.pulse-gradient-border {
+  position: relative;
+  background: transparent;
+  border: 1px dashed hsl(var(--border));
+  transition: all 0.3s ease;
+}
+
+.pulse-gradient-border:hover {
+  border-color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.05);
+}
+
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.3) hsl(var(--muted));
+}
+
+/* Enhanced focus states */
+input:focus-visible,
+textarea:focus-visible,
+button:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Animation utilities */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
