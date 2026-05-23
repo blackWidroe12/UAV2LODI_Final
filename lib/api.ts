@@ -107,7 +107,13 @@ async function fetchApi<T>(
 
     if (!response.ok) {
       const body = await response.json().catch(() => ({})) as Record<string, any>;
-      const errorMsg = body.error || body.detail || response.statusText;
+      let errorMsg = body.error || body.detail || response.statusText;
+
+      // Ensure error is always a string, not an object
+      if (typeof errorMsg === 'object') {
+        errorMsg = errorMsg?.message || JSON.stringify(errorMsg);
+      }
+      errorMsg = String(errorMsg);
 
       if (response.status === 401) {
         if (typeof window !== 'undefined') {
@@ -121,8 +127,7 @@ async function fetchApi<T>(
 
       // Intercept 404 project not found
       if (response.status === 404) {
-        const errorStr = typeof errorMsg === 'object' ? JSON.stringify(errorMsg) : String(errorMsg);
-        const lowerError = errorStr.toLowerCase();
+        const lowerError = errorMsg.toLowerCase();
         const codeStr = body.error && typeof body.error === 'object' ? String(body.error.code).toLowerCase() : '';
         const msgStr = body.error && typeof body.error === 'object' ? String(body.error.message).toLowerCase() : '';
 
