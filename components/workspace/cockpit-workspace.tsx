@@ -65,7 +65,6 @@ export function CockpitWorkspace() {
   } = usePipelineStore();
   const { sidebarCollapsed } = useUIStore();
   const { activeProject } = useProjectStore();
-  const { token } = useAuthStore();
 
   useEffect(() => {
   // Initialize authentication and load necessary data
@@ -73,8 +72,8 @@ export function CockpitWorkspace() {
     // Verify session (updates auth store)
     const sessionOk = await useAuthStore.getState().checkSession();
     console.log('[cockpit] Session valid:', sessionOk);
-    const token = useAuthStore.getState().token;
-    console.log('[cockpit] Token used for API calls:', token ? `${token.slice(0, 20)}...` : 'none');
+    const freshToken = useAuthStore.getState().token;
+    console.log('[cockpit] Token used for API calls:', freshToken ? `${freshToken.slice(0, 20)}...` : 'none');
 
     if (!activeProject?.id) {
       console.warn('[cockpit] No active project, aborting data fetch');
@@ -84,7 +83,7 @@ export function CockpitWorkspace() {
     // Load GCPs
     try {
       const gcpRes = await fetch(`/api/projects/${activeProject.id}/gcps`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        headers: freshToken ? { Authorization: `Bearer ${freshToken}` } : undefined,
         credentials: 'include',
       });
       const gcpData = await gcpRes.json();
@@ -98,7 +97,7 @@ export function CockpitWorkspace() {
     // Restore pipeline state
     try {
       const stateRes = await fetch(`/api/projects/${activeProject.id}/pipeline/state`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        headers: freshToken ? { Authorization: `Bearer ${freshToken}` } : undefined,
         credentials: 'include',
       });
       if (!stateRes.ok) {
