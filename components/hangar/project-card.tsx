@@ -95,9 +95,9 @@ export function ProjectCard({
 
   return (
     <motion.div
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      className="glass rounded-xl p-4 cursor-pointer group relative"
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.99 }}
+      className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm p-4 cursor-pointer group relative transition-colors hover:border-border hover:bg-card/80"
       onClick={onOpen}
     >
       {/* Actions menu */}
@@ -203,19 +203,19 @@ interface NewProjectCardProps {
 export function NewProjectCard({ onClick }: NewProjectCardProps) {
   return (
     <motion.button
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.99 }}
       onClick={onClick}
-      className="pulse-gradient-border rounded-xl p-6 h-full min-h-[140px] flex flex-col items-center justify-center gap-3 group"
+      className="rounded-xl border border-dashed border-border/50 bg-transparent p-6 h-full min-h-[140px] flex flex-col items-center justify-center gap-3 group transition-colors hover:border-cyan-500/50 hover:bg-cyan-500/5"
     >
-      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center group-hover:scale-110 transition-transform">
-        <Folder className="w-5 h-5 text-primary-foreground" />
+      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-violet-500 flex items-center justify-center group-hover:scale-105 transition-transform">
+        <Folder className="w-5 h-5 text-white" />
       </div>
       <div className="text-center">
         <p className="font-medium">New Project</p>
         <p className="text-xs text-muted-foreground">Start a new pipeline</p>
       </div>
-      <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+      <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-cyan-400 group-hover:translate-x-1 transition-all" />
     </motion.button>
   );
 }
