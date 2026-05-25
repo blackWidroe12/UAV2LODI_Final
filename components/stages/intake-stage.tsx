@@ -396,6 +396,7 @@ export function IntakeStage() {
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [isLoadingImages, setIsLoadingImages] = useState(false);
   const { 
     stages, 
     updateStage, 
@@ -407,47 +408,100 @@ export function IntakeStage() {
     updateGCP,
     removeGCP,
     droneImages,
+    setDroneImages,
   } = usePipelineStore();
-  const { activeProject, updateProject } = useProjectStore();
+  const { activeProject } = useProjectStore();
   const { token } = useAuthStore();
   const [stageError, setStageError] = useState<string | null>(null);
-  
-  const [dirPathInput, setDirPathInput] = useState('');
-  const [isSavingPath, setIsSavingPath] = useState(false);
 
+  // Automatically load images from project directory when component mounts or project changes
   useEffect(() => {
-    if (activeProject) {
-      setDirPathInput(activeProject.directoryPath || '');
-    }
-  }, [activeProject]);
+    const loadImagesFromProjectDirectory = async () => {
+      if (!activeProject?.id) {
+        console.log('[intake] No active project');
+        return;
+      }
 
-  const handleSaveDirPath = async () => {
-    if (!activeProject) return;
-    setIsSavingPath(true);
-    try {
-      const { projectApi } = await import('@/lib/api');
-      const res = await projectApi.update(activeProject.id, { directoryPath: dirPathInput });
-      if (res.success && res.data) {
-        updateProject({ directoryPath: dirPathInput });
+      if (!activeProject?.directoryPath) {
+        const msg = 'Project directory not configured. Please create a new project with an image directory.';
         addLog({
-          level: 'success',
-          message: `Updated project image directory path to: "${dirPathInput}"`,
+          level: 'error',
+          message: msg,
           source: 'intake',
         });
-      } else {
-        throw new Error(res.error || 'Failed to update directory path on server');
+        setStageError(msg);
+        return;
       }
-    } catch (err: any) {
-      addLog({
-        level: 'error',
-        message: `Failed to update image directory: ${err.message}`,
-        source: 'intake',
-      });
-      setStageError(`Failed to save path: ${err.message}`);
-    } finally {
-      setIsSavingPath(false);
-    }
-  };
+
+      setIsLoadingImages(true);
+      setStageError(null);
+
+      try {
+        console.log('[intake] Loading images from project directory:', activeProject.directoryPath);
+
+        // Call API to list images from the project's stored directory
+        const response = await fetch('/api/projects', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            action: 'list-images',
+            projectId: activeProject.id,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to load images: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error(result.error?.message || 'Failed to load images');
+        }
+
+        const images = result.data.images || [];
+        console.log('[intake] Loaded images:', images.length);
+
+        // Convert file names to DroneImage objects for pipeline store
+        const droneImageObjects = images.map((fileName: string, idx: number) => ({
+          id: `img-${idx}`,
+          name: fileName,
+          file: undefined,
+          thumbnailUrl: '',
+          size: 0,
+          sizeFormatted: '',
+          extension: fileName.split('.').pop()?.toUpperCase() || '',
+          hasGPS: true, // Assume drone images have GPS
+          lastModified: new Date(),
+        }));
+
+        // Update pipeline store with images and folder name
+        setDroneImages(droneImageObjects, activeProject.directoryPath);
+
+        addLog({
+          level: 'success',
+          message: `Loaded ${images.length} images from project directory`,
+          source: 'intake',
+        });
+      } catch (err: any) {
+        console.error('[intake] Error loading images:', err);
+        const errorMsg = err.message || 'Failed to load images';
+        setStageError(errorMsg);
+        addLog({
+          level: 'error',
+          message: `Failed to load images: ${errorMsg}`,
+          source: 'intake',
+        });
+      } finally {
+        setIsLoadingImages(false);
+      }
+    };
+
+    loadImagesFromProjectDirectory();
+  }, [activeProject?.id, activeProject?.directoryPath, token, addLog, setDroneImages]);
 
   const stage = stages.find(s => s.id === 'intake');
   const verifiedCount = gcps.filter((g) => g.isVerified).length;
@@ -623,7 +677,7 @@ export function IntakeStage() {
             </div>
           )}
 
-          {/* Image Directory Configuration Block */}
+          {/* Image Directory Information Block - READ ONLY */}
           <div className="col-span-2 p-4 rounded-lg bg-[#161B22] border border-[rgba(255,255,255,0.06)] space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -640,43 +694,26 @@ export function IntakeStage() {
               </Badge>
             </div>
             
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Input
-                  placeholder="e.g. C:\Users\YourName\Pictures\DroneImages"
-                  value={dirPathInput}
-                  onChange={(e) => setDirPathInput(e.target.value)}
-                  className="h-10 bg-[#0E1117] border-[rgba(255,255,255,0.06)] font-mono text-xs pr-20"
-                />
-                {activeProject?.directoryPath && (
-                  <span className="absolute right-3 top-2.5 text-[10px] text-[#6B7280] font-mono">
-                    Current
-                  </span>
-                )}
+            {activeProject?.directoryPath ? (
+              <div className="p-3 bg-[#0E1117] border border-[rgba(255,255,255,0.06)] rounded">
+                <p className="text-xs text-[#8B949E] mb-1">Project Directory Path:</p>
+                <p className="text-xs text-[#E6EDF3] font-mono break-all">{activeProject.directoryPath}</p>
               </div>
-              <Button
-                onClick={handleSaveDirPath}
-                disabled={isSavingPath || dirPathInput.trim() === (activeProject?.directoryPath || '')}
-                className="h-10 px-4 bg-gradient-to-r from-[#00D4FF] to-[#00D4FF]/80 text-[#0E1117] hover:opacity-90 font-medium shrink-0"
-              >
-                {isSavingPath ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Path
-                  </>
-                )}
-              </Button>
-            </div>
+            ) : (
+              <div className="p-3 bg-red-950 border border-red-800 rounded">
+                <p className="text-xs text-red-300">No directory configured. Create a new project with an image directory to proceed.</p>
+              </div>
+            )}
+            
+            {isLoadingImages && (
+              <div className="flex items-center gap-2 text-[12px] text-[#00D4FF]">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Loading images from directory...
+              </div>
+            )}
             
             <p className="text-[11px] text-[#8B949E] leading-relaxed">
-              Before running downstream stages like SfM, ensure this path points exactly to the directory on your local machine containing the images.
-              {activeProject?.directoryPath && !activeProject.directoryPath.includes(':') && !activeProject.directoryPath.startsWith('/') && (
-                <span className="text-[#F59E0B] ml-1 block mt-1 font-semibold">
-                  ⚠️ Note: Your current path &quot;{activeProject.directoryPath}&quot; is a relative folder name. If Next.js runs on a different drive or directory, consider pasting the full absolute path.
-                </span>
-              )}
+              This directory was selected during project creation. All downstream stages will use images from this location.
             </p>
           </div>
           {/* Left: GCP Management */}
