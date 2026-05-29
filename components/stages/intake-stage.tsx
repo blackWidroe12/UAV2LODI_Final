@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePipelineStore, useProjectStore, useAuthStore } from '@/lib/stores';
 import { cn } from '@/lib/utils';
@@ -38,7 +38,6 @@ import {
   AlertCircle,
   ZoomIn,
   FolderOpen,
-  Loader2,
 } from 'lucide-react';
 
 interface GCPMarker {
@@ -413,6 +412,8 @@ export function IntakeStage() {
   const { activeProject } = useProjectStore();
   const { token } = useAuthStore();
   const [stageError, setStageError] = useState<string | null>(null);
+<<<<<<< HEAD
+=======
 
   // Automatically load images from project directory when component mounts or project changes
   useEffect(() => {
@@ -502,6 +503,7 @@ export function IntakeStage() {
 
     loadImagesFromProjectDirectory();
   }, [activeProject?.id, activeProject?.directoryPath, token, addLog, setDroneImages]);
+>>>>>>> f8d67ae72950bba980efcb139e7eed42e5ac7afd
 
   const stage = stages.find(s => s.id === 'intake');
   const verifiedCount = gcps.filter((g) => g.isVerified).length;
@@ -677,22 +679,50 @@ export function IntakeStage() {
             </div>
           )}
 
+<<<<<<< HEAD
+          {/* Image Directory (set once at project creation, read-only here) */}
+=======
           {/* Image Directory Information Block - READ ONLY */}
+>>>>>>> f8d67ae72950bba980efcb139e7eed42e5ac7afd
           <div className="col-span-2 p-4 rounded-lg bg-[#161B22] border border-[rgba(255,255,255,0.06)] space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FolderOpen className="h-4 w-4 text-[#00D4FF]" />
-                <h3 className="text-[13px] font-medium text-[#E6EDF3]">UAV Image Directory Location</h3>
+                <h3 className="text-[13px] font-medium text-[#E6EDF3]">UAV Image Directory</h3>
               </div>
               <Badge variant="outline" className={cn(
                 'text-[10px]',
-                activeProject?.directoryPath 
-                  ? 'border-[#10B981]/50 text-[#10B981] bg-[#10B981]/5' 
+                activeProject?.directoryPath
+                  ? 'border-[#10B981]/50 text-[#10B981] bg-[#10B981]/5'
                   : 'border-[#EF4444]/50 text-[#EF4444] bg-[#EF4444]/5'
               )}>
                 {activeProject?.directoryPath ? 'Configured' : 'Missing'}
               </Badge>
             </div>
+<<<<<<< HEAD
+
+            {activeProject?.directoryPath ? (
+              <div className="flex items-center gap-2 h-10 px-3 rounded-md bg-[#0E1117] border border-[rgba(255,255,255,0.06)]">
+                <FolderOpen className="h-4 w-4 text-[#6B7280] shrink-0" />
+                <span className="flex-1 font-mono text-xs text-[#C9D1D9] truncate" title={activeProject.directoryPath}>
+                  {activeProject.directoryPath}
+                </span>
+                <span className="text-[10px] text-[#6B7280] font-mono shrink-0">
+                  {droneImages.length} images
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 h-10 px-3 rounded-md bg-[#0E1117] border border-[rgba(255,255,255,0.06)]">
+                <AlertCircle className="h-4 w-4 text-[#EF4444] shrink-0" />
+                <span className="text-xs text-[#8B949E]">
+                  No directory configured. Create a new project and select an image folder to begin.
+                </span>
+              </div>
+            )}
+
+            <p className="text-[11px] text-[#8B949E] leading-relaxed">
+              The image directory is selected once when the project is created and reused across all pipeline stages. To use a different folder, create a new project.
+=======
             
             {activeProject?.directoryPath ? (
               <div className="p-3 bg-[#0E1117] border border-[rgba(255,255,255,0.06)] rounded">
@@ -714,6 +744,7 @@ export function IntakeStage() {
             
             <p className="text-[11px] text-[#8B949E] leading-relaxed">
               This directory was selected during project creation. All downstream stages will use images from this location.
+>>>>>>> f8d67ae72950bba980efcb139e7eed42e5ac7afd
             </p>
           </div>
           {/* Left: GCP Management */}
