@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePipelineStore, useProjectStore, useAuthStore } from '@/lib/stores';
 import { cn } from '@/lib/utils';
@@ -38,7 +38,6 @@ import {
   AlertCircle,
   ZoomIn,
   FolderOpen,
-  Loader2,
 } from 'lucide-react';
 
 interface GCPMarker {
@@ -408,46 +407,9 @@ export function IntakeStage() {
     removeGCP,
     droneImages,
   } = usePipelineStore();
-  const { activeProject, updateProject } = useProjectStore();
+  const { activeProject } = useProjectStore();
   const { token } = useAuthStore();
   const [stageError, setStageError] = useState<string | null>(null);
-  
-  const [dirPathInput, setDirPathInput] = useState('');
-  const [isSavingPath, setIsSavingPath] = useState(false);
-
-  useEffect(() => {
-    if (activeProject) {
-      setDirPathInput(activeProject.directoryPath || '');
-    }
-  }, [activeProject]);
-
-  const handleSaveDirPath = async () => {
-    if (!activeProject) return;
-    setIsSavingPath(true);
-    try {
-      const { projectApi } = await import('@/lib/api');
-      const res = await projectApi.update(activeProject.id, { directoryPath: dirPathInput });
-      if (res.success && res.data) {
-        updateProject({ directoryPath: dirPathInput });
-        addLog({
-          level: 'success',
-          message: `Updated project image directory path to: "${dirPathInput}"`,
-          source: 'intake',
-        });
-      } else {
-        throw new Error(res.error || 'Failed to update directory path on server');
-      }
-    } catch (err: any) {
-      addLog({
-        level: 'error',
-        message: `Failed to update image directory: ${err.message}`,
-        source: 'intake',
-      });
-      setStageError(`Failed to save path: ${err.message}`);
-    } finally {
-      setIsSavingPath(false);
-    }
-  };
 
   const stage = stages.find(s => s.id === 'intake');
   const verifiedCount = gcps.filter((g) => g.isVerified).length;
@@ -623,60 +585,44 @@ export function IntakeStage() {
             </div>
           )}
 
-          {/* Image Directory Configuration Block */}
+          {/* Image Directory (set once at project creation, read-only here) */}
           <div className="col-span-2 p-4 rounded-lg bg-[#161B22] border border-[rgba(255,255,255,0.06)] space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FolderOpen className="h-4 w-4 text-[#00D4FF]" />
-                <h3 className="text-[13px] font-medium text-[#E6EDF3]">UAV Image Directory Location</h3>
+                <h3 className="text-[13px] font-medium text-[#E6EDF3]">UAV Image Directory</h3>
               </div>
               <Badge variant="outline" className={cn(
                 'text-[10px]',
-                activeProject?.directoryPath 
-                  ? 'border-[#10B981]/50 text-[#10B981] bg-[#10B981]/5' 
+                activeProject?.directoryPath
+                  ? 'border-[#10B981]/50 text-[#10B981] bg-[#10B981]/5'
                   : 'border-[#EF4444]/50 text-[#EF4444] bg-[#EF4444]/5'
               )}>
                 {activeProject?.directoryPath ? 'Configured' : 'Missing'}
               </Badge>
             </div>
-            
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Input
-                  placeholder="e.g. C:\Users\YourName\Pictures\DroneImages"
-                  value={dirPathInput}
-                  onChange={(e) => setDirPathInput(e.target.value)}
-                  className="h-10 bg-[#0E1117] border-[rgba(255,255,255,0.06)] font-mono text-xs pr-20"
-                />
-                {activeProject?.directoryPath && (
-                  <span className="absolute right-3 top-2.5 text-[10px] text-[#6B7280] font-mono">
-                    Current
-                  </span>
-                )}
-              </div>
-              <Button
-                onClick={handleSaveDirPath}
-                disabled={isSavingPath || dirPathInput.trim() === (activeProject?.directoryPath || '')}
-                className="h-10 px-4 bg-gradient-to-r from-[#00D4FF] to-[#00D4FF]/80 text-[#0E1117] hover:opacity-90 font-medium shrink-0"
-              >
-                {isSavingPath ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Path
-                  </>
-                )}
-              </Button>
-            </div>
-            
-            <p className="text-[11px] text-[#8B949E] leading-relaxed">
-              Before running downstream stages like SfM, ensure this path points exactly to the directory on your local machine containing the images.
-              {activeProject?.directoryPath && !activeProject.directoryPath.includes(':') && !activeProject.directoryPath.startsWith('/') && (
-                <span className="text-[#F59E0B] ml-1 block mt-1 font-semibold">
-                  ⚠️ Note: Your current path &quot;{activeProject.directoryPath}&quot; is a relative folder name. If Next.js runs on a different drive or directory, consider pasting the full absolute path.
+
+            {activeProject?.directoryPath ? (
+              <div className="flex items-center gap-2 h-10 px-3 rounded-md bg-[#0E1117] border border-[rgba(255,255,255,0.06)]">
+                <FolderOpen className="h-4 w-4 text-[#6B7280] shrink-0" />
+                <span className="flex-1 font-mono text-xs text-[#C9D1D9] truncate" title={activeProject.directoryPath}>
+                  {activeProject.directoryPath}
                 </span>
-              )}
+                <span className="text-[10px] text-[#6B7280] font-mono shrink-0">
+                  {droneImages.length} images
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 h-10 px-3 rounded-md bg-[#0E1117] border border-[rgba(255,255,255,0.06)]">
+                <AlertCircle className="h-4 w-4 text-[#EF4444] shrink-0" />
+                <span className="text-xs text-[#8B949E]">
+                  No directory configured. Create a new project and select an image folder to begin.
+                </span>
+              </div>
+            )}
+
+            <p className="text-[11px] text-[#8B949E] leading-relaxed">
+              The image directory is selected once when the project is created and reused across all pipeline stages. To use a different folder, create a new project.
             </p>
           </div>
           {/* Left: GCP Management */}
