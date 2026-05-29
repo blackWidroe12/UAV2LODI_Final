@@ -395,6 +395,7 @@ export function IntakeStage() {
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [isLoadingImages, setIsLoadingImages] = useState(false);
   const { 
     stages, 
     updateStage, 
@@ -406,10 +407,103 @@ export function IntakeStage() {
     updateGCP,
     removeGCP,
     droneImages,
+    setDroneImages,
   } = usePipelineStore();
   const { activeProject } = useProjectStore();
   const { token } = useAuthStore();
   const [stageError, setStageError] = useState<string | null>(null);
+<<<<<<< HEAD
+=======
+
+  // Automatically load images from project directory when component mounts or project changes
+  useEffect(() => {
+    const loadImagesFromProjectDirectory = async () => {
+      if (!activeProject?.id) {
+        console.log('[intake] No active project');
+        return;
+      }
+
+      if (!activeProject?.directoryPath) {
+        const msg = 'Project directory not configured. Please create a new project with an image directory.';
+        addLog({
+          level: 'error',
+          message: msg,
+          source: 'intake',
+        });
+        setStageError(msg);
+        return;
+      }
+
+      setIsLoadingImages(true);
+      setStageError(null);
+
+      try {
+        console.log('[intake] Loading images from project directory:', activeProject.directoryPath);
+
+        // Call API to list images from the project's stored directory
+        const response = await fetch('/api/projects', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            action: 'list-images',
+            projectId: activeProject.id,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to load images: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error(result.error?.message || 'Failed to load images');
+        }
+
+        const images = result.data.images || [];
+        console.log('[intake] Loaded images:', images.length);
+
+        // Convert file names to DroneImage objects for pipeline store
+        const droneImageObjects = images.map((fileName: string, idx: number) => ({
+          id: `img-${idx}`,
+          name: fileName,
+          file: undefined,
+          thumbnailUrl: '',
+          size: 0,
+          sizeFormatted: '',
+          extension: fileName.split('.').pop()?.toUpperCase() || '',
+          hasGPS: true, // Assume drone images have GPS
+          lastModified: new Date(),
+        }));
+
+        // Update pipeline store with images and folder name
+        setDroneImages(droneImageObjects, activeProject.directoryPath);
+
+        addLog({
+          level: 'success',
+          message: `Loaded ${images.length} images from project directory`,
+          source: 'intake',
+        });
+      } catch (err: any) {
+        console.error('[intake] Error loading images:', err);
+        const errorMsg = err.message || 'Failed to load images';
+        setStageError(errorMsg);
+        addLog({
+          level: 'error',
+          message: `Failed to load images: ${errorMsg}`,
+          source: 'intake',
+        });
+      } finally {
+        setIsLoadingImages(false);
+      }
+    };
+
+    loadImagesFromProjectDirectory();
+  }, [activeProject?.id, activeProject?.directoryPath, token, addLog, setDroneImages]);
+>>>>>>> f8d67ae72950bba980efcb139e7eed42e5ac7afd
 
   const stage = stages.find(s => s.id === 'intake');
   const verifiedCount = gcps.filter((g) => g.isVerified).length;
@@ -585,7 +679,11 @@ export function IntakeStage() {
             </div>
           )}
 
+<<<<<<< HEAD
           {/* Image Directory (set once at project creation, read-only here) */}
+=======
+          {/* Image Directory Information Block - READ ONLY */}
+>>>>>>> f8d67ae72950bba980efcb139e7eed42e5ac7afd
           <div className="col-span-2 p-4 rounded-lg bg-[#161B22] border border-[rgba(255,255,255,0.06)] space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -601,6 +699,7 @@ export function IntakeStage() {
                 {activeProject?.directoryPath ? 'Configured' : 'Missing'}
               </Badge>
             </div>
+<<<<<<< HEAD
 
             {activeProject?.directoryPath ? (
               <div className="flex items-center gap-2 h-10 px-3 rounded-md bg-[#0E1117] border border-[rgba(255,255,255,0.06)]">
@@ -623,6 +722,29 @@ export function IntakeStage() {
 
             <p className="text-[11px] text-[#8B949E] leading-relaxed">
               The image directory is selected once when the project is created and reused across all pipeline stages. To use a different folder, create a new project.
+=======
+            
+            {activeProject?.directoryPath ? (
+              <div className="p-3 bg-[#0E1117] border border-[rgba(255,255,255,0.06)] rounded">
+                <p className="text-xs text-[#8B949E] mb-1">Project Directory Path:</p>
+                <p className="text-xs text-[#E6EDF3] font-mono break-all">{activeProject.directoryPath}</p>
+              </div>
+            ) : (
+              <div className="p-3 bg-red-950 border border-red-800 rounded">
+                <p className="text-xs text-red-300">No directory configured. Create a new project with an image directory to proceed.</p>
+              </div>
+            )}
+            
+            {isLoadingImages && (
+              <div className="flex items-center gap-2 text-[12px] text-[#00D4FF]">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Loading images from directory...
+              </div>
+            )}
+            
+            <p className="text-[11px] text-[#8B949E] leading-relaxed">
+              This directory was selected during project creation. All downstream stages will use images from this location.
+>>>>>>> f8d67ae72950bba980efcb139e7eed42e5ac7afd
             </p>
           </div>
           {/* Left: GCP Management */}
