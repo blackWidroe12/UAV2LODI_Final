@@ -95,23 +95,15 @@ export function CockpitWorkspace() {
       console.error('Failed to load GCPs:', e);
     }
 
-    // Restore pipeline state
+    // Restore pipeline state (single fetch via the store action)
     try {
-      const stateRes = await fetch(`/api/projects/${activeProject.id}/pipeline/state`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        credentials: 'include',
-      });
-      if (!stateRes.ok) {
-        console.error('[cockpit] Failed to fetch pipeline state:', stateRes.status);
-        return;
-      }
-      const stateData = await stateRes.json();
-      if (stateData.success) {
-        await loadPipelineState(activeProject.id);
-        const currentStage = stateData.data.currentStageId;
-        console.log('[cockpit] Restored stage:', currentStage);
-        setCurrentStageId(currentStage);
-        console.log('[cockpit] Pipeline state restored successfully');
+      await loadPipelineState(activeProject.id);
+      // loadPipelineState populates currentStageId in the store; mirror it into
+      // activeStageId so the UI navigates back to the saved stage.
+      const restoredStage = usePipelineStore.getState().currentStageId;
+      if (restoredStage) {
+        setCurrentStageId(restoredStage);
+        console.log('[cockpit] Pipeline state restored, stage:', restoredStage);
       }
     } catch (e) {
       console.error('[cockpit] Error restoring pipeline state:', e);
