@@ -115,8 +115,8 @@ export async function saveStageProgress(
       completedAt: stageData.completedAt ? new Date(stageData.completedAt) : null,
       processingTimeSeconds: stageData.processingTimeSeconds || null,
       errorMessage: stageData.errorMessage || null,
-      metadata: stageData.metadata || Prisma.DbNull,
-      outputs: stageData.outputs || Prisma.DbNull,
+      metadata: stageData.metadata ?? undefined,
+      outputs: stageData.outputs ?? undefined,
       updatedAt: new Date(),
     },
     create: {
@@ -129,8 +129,8 @@ export async function saveStageProgress(
       completedAt: stageData.completedAt ? new Date(stageData.completedAt) : null,
       processingTimeSeconds: stageData.processingTimeSeconds || null,
       errorMessage: stageData.errorMessage || null,
-      metadata: stageData.metadata || Prisma.DbNull,
-      outputs: stageData.outputs || Prisma.DbNull,
+      metadata: stageData.metadata ?? undefined,
+      outputs: stageData.outputs ?? undefined,
     },
   });
 }
@@ -154,5 +154,31 @@ export async function resetStageProgress(projectId: string, stageId: string) {
 export async function deleteAllStageProgress(projectId: string) {
   return prisma.stageProgress.deleteMany({
     where: { projectId },
+  });
+}
+
+export async function markStageCompleted(projectId: string, stageId: string, outputs?: Record<string, any>) {
+  const now = Date.now();
+  const existing = await prisma.stageProgress.findUnique({
+    where: { projectId_stageId: { projectId, stageId } },
+  });
+  const startTime = existing?.startedAt?.getTime() ?? now;
+  return saveStageProgress(projectId, {
+    stageId,
+    status: 'completed',
+    progress: 100,
+    completedAt: now,
+    processingTimeSeconds: Math.floor((now - startTime) / 1000),
+    outputs,
+  });
+}
+
+export async function markStageFailed(projectId: string, stageId: string, errorMessage: string) {
+  return saveStageProgress(projectId, {
+    stageId,
+    status: 'error',
+    progress: 0,
+    errorMessage,
+    completedAt: Date.now(),
   });
 }

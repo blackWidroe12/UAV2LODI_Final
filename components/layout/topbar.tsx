@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   Play,
@@ -73,22 +73,26 @@ export function Topbar() {
     setIsEditingName(false);
   };
 
-  const handleCRSChange = (newCRS: string) => {
+  const handleCRSChange = useCallback((newCRS: string) => {
     if (activeProject) {
       updateProject({ crs: newCRS });
     }
-  };
+  }, [activeProject, updateProject]);
 
-  const handleRunAll = () => {
+  const handleRunAll = useCallback(() => {
     if (!isGlobalRunning) {
       setShowGhostRun(true);
     }
     setGlobalRunning(!isGlobalRunning);
-  };
+  }, [isGlobalRunning, setShowGhostRun, setGlobalRunning]);
 
-  const handleLogoClick = () => {
+  const handleLogoClick = useCallback(() => {
     setCurrentView('hangar');
-  };
+  }, [setCurrentView]);
+
+  const handleRunModeChange = useCallback((checked: boolean) => {
+    setRunMode(checked ? 'sequential' : 'stage-by-stage');
+  }, [setRunMode]);
 
   const userInitials = user
     ? `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase()
@@ -208,9 +212,7 @@ export function Topbar() {
             </span>
             <Switch
               checked={runMode === 'sequential'}
-              onCheckedChange={(checked) =>
-                setRunMode(checked ? 'sequential' : 'stage-by-stage')
-              }
+              onCheckedChange={handleRunModeChange}
               className="h-4 w-7 data-[state=checked]:bg-[#00D4FF]"
             />
             <span

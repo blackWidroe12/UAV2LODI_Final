@@ -77,6 +77,29 @@ export function setCachedToken(token: string | null) {
   tokenCache.timestamp = token ? Date.now() : 0;
 }
 
+/**
+ * Get auth headers for API requests
+ */
+export function getAuthHeaders(): Record<string, string> {
+  const token = getCachedToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+/**
+ * Safe fetch wrapper that checks for HTML responses (missing API routes)
+ * and throws an error instead of trying to parse HTML as JSON.
+ */
+async function safeFetch(url: string, options?: RequestInit): Promise<Response> {
+  const response = await fetch(url, options);
+  
+  const contentType = response.headers.get('content-type');
+  if (contentType?.includes('text/html')) {
+    throw new Error(`API route not found: ${url} — returned HTML instead of JSON`);
+  }
+  
+  return response;
+}
+
 async function fetchApi<T>(
   endpoint: string,
   options: RequestInit & { skipContentType?: boolean } = {}

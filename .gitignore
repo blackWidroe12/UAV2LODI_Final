@@ -25,7 +25,6 @@ turbopack-cache/
 .env.test.local
 
 # ===== IDE & Editor =====
-.vscode/
 .idea/
 *.swp
 *.swo

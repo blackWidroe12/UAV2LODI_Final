@@ -1,25 +1,27 @@
 // lib/db.ts
 
-import { PrismaClient } from '@prisma/client';
-import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
-import crypto from 'crypto';
+import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+import fs from 'fs';
 import { cookies } from 'next/headers';
-import { ensureDbInitialised } from './db-init';
-import { generateToken as generateJWT, verifyToken as verifyJWT } from './auth-jwt';
+import path from 'path';
+import { Pool } from 'pg';
 import { APIError, ErrorCodes } from './api-errors';
-import type { 
-  User, 
-  ProjectConfig as Project, 
-  GCPMarker, 
-  GCPImportMeta,
-  SfMConfig,
-  SfMOutputs,
-  StageResult
+import { generateToken as generateJWT, verifyToken as verifyJWT } from './auth-jwt';
+import { ensureDbInitialised } from './db-init';
+import type {
+    GCPImportMeta,
+    GCPMarker,
+    ProjectConfig as Project,
+    SfMConfig,
+    SfMOutputs,
+    StageResult,
+    User
 } from './types';
 
-export type { User, Project, GCPMarker, GCPImportMeta, SfMConfig, SfMOutputs, StageResult };
+export type { GCPImportMeta, GCPMarker, Project, SfMConfig, SfMOutputs, StageResult, User };
 
 // Single Prisma instance for the entire app (required for Next.js)
 declare global {
@@ -393,9 +395,32 @@ export async function updateProject(
 
 export async function deleteProject(id: string): Promise<boolean> {
   try {
-    await prisma.project.delete({
-      where: { id },
-    });
+    console.log('[db] Deleting project:', id);
+
+    const project = await prisma.project.findUnique({ where: { id } });
+    if (!project) throw new Error('Project not found');
+
+    // Delete output files from disk
+    try {
+      const outputDir = path.join(process.cwd(), 'data', 'outputs', id);
+      if (fs.existsSync(outputDir)) {
+        fs.rmSync(outputDir, { recursive: true, force: true });
+        console.log('[db] Output directory deleted');
+      }
+    } catch (err: any) {
+      console.warn('[db] File cleanup warning:', err.message);
+    }
+
+    // Delete all related records explicitly before project
+    await prisma.sfMConfig.deleteMany({ where: { projectId: id } }).catch(() => null);
+    await prisma.pipelineState.deleteMany({ where: { projectId: id } }).catch(() => null);
+    await prisma.stageResult.deleteMany({ where: { projectId: id } }).catch(() => null);
+    await prisma.gCPData.deleteMany({ where: { projectId: id } }).catch(() => null);
+
+    // Delete the project (cascade handles the rest)
+    const deleted = await prisma.project.delete({ where: { id } });
+
+    console.log('[db] Project deleted:', deleted.name);
     return true;
   } catch {
     return false;
