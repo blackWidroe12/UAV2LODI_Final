@@ -96,7 +96,6 @@ export function CockpitWorkspace() {
 
     // Restore pipeline state (single fetch via the store action)
     try {
-<<<<<<< HEAD
       await loadPipelineState(activeProject.id);
       // loadPipelineState populates currentStageId in the store; mirror it into
       // activeStageId so the UI navigates back to the saved stage.
@@ -104,23 +103,6 @@ export function CockpitWorkspace() {
       if (restoredStage) {
         setCurrentStageId(restoredStage);
         console.log('[cockpit] Pipeline state restored, stage:', restoredStage);
-=======
-      const stateRes = await fetch(`/api/projects/${activeProject.id}/pipeline/state`, {
-        headers: freshToken ? { Authorization: `Bearer ${freshToken}` } : undefined,
-        credentials: 'include',
-      });
-      if (!stateRes.ok) {
-        console.error('[cockpit] Failed to fetch pipeline state:', stateRes.status);
-        return;
-      }
-      const stateData = await stateRes.json();
-      if (stateData.success) {
-        await loadPipelineState(activeProject.id);
-        const currentStage = stateData.data.currentStageId;
-        console.log('[cockpit] Restored stage:', currentStage);
-        setCurrentStageId(currentStage);
-        console.log('[cockpit] Pipeline state restored successfully');
->>>>>>> f8d67ae72950bba980efcb139e7eed42e5ac7afd
       }
     } catch (e) {
       console.error('[cockpit] Error restoring pipeline state:', e);
