@@ -412,8 +412,6 @@ export function IntakeStage() {
   const { activeProject } = useProjectStore();
   const { token } = useAuthStore();
   const [stageError, setStageError] = useState<string | null>(null);
-<<<<<<< HEAD
-=======
 
   // Automatically load images from project directory when component mounts or project changes
   useEffect(() => {
@@ -503,7 +501,6 @@ export function IntakeStage() {
 
     loadImagesFromProjectDirectory();
   }, [activeProject?.id, activeProject?.directoryPath, token, addLog, setDroneImages]);
->>>>>>> f8d67ae72950bba980efcb139e7eed42e5ac7afd
 
   const stage = stages.find(s => s.id === 'intake');
   const verifiedCount = gcps.filter((g) => g.isVerified).length;
@@ -679,11 +676,7 @@ export function IntakeStage() {
             </div>
           )}
 
-<<<<<<< HEAD
           {/* Image Directory (set once at project creation, read-only here) */}
-=======
-          {/* Image Directory Information Block - READ ONLY */}
->>>>>>> f8d67ae72950bba980efcb139e7eed42e5ac7afd
           <div className="col-span-2 p-4 rounded-lg bg-[#161B22] border border-[rgba(255,255,255,0.06)] space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -699,7 +692,6 @@ export function IntakeStage() {
                 {activeProject?.directoryPath ? 'Configured' : 'Missing'}
               </Badge>
             </div>
-<<<<<<< HEAD
 
             {activeProject?.directoryPath ? (
               <div className="flex items-center gap-2 h-10 px-3 rounded-md bg-[#0E1117] border border-[rgba(255,255,255,0.06)]">
@@ -722,29 +714,6 @@ export function IntakeStage() {
 
             <p className="text-[11px] text-[#8B949E] leading-relaxed">
               The image directory is selected once when the project is created and reused across all pipeline stages. To use a different folder, create a new project.
-=======
-            
-            {activeProject?.directoryPath ? (
-              <div className="p-3 bg-[#0E1117] border border-[rgba(255,255,255,0.06)] rounded">
-                <p className="text-xs text-[#8B949E] mb-1">Project Directory Path:</p>
-                <p className="text-xs text-[#E6EDF3] font-mono break-all">{activeProject.directoryPath}</p>
-              </div>
-            ) : (
-              <div className="p-3 bg-red-950 border border-red-800 rounded">
-                <p className="text-xs text-red-300">No directory configured. Create a new project with an image directory to proceed.</p>
-              </div>
-            )}
-            
-            {isLoadingImages && (
-              <div className="flex items-center gap-2 text-[12px] text-[#00D4FF]">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Loading images from directory...
-              </div>
-            )}
-            
-            <p className="text-[11px] text-[#8B949E] leading-relaxed">
-              This directory was selected during project creation. All downstream stages will use images from this location.
->>>>>>> f8d67ae72950bba980efcb139e7eed42e5ac7afd
             </p>
           </div>
           {/* Left: GCP Management */}
